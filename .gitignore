@@ -1,0 +1,23 @@
+# Fichiers temporaires
+*.tmp
+*.log
+*.swp
+*~
+
+# Fichiers de cache
+.DS_Store
+Thumbs.db
+
+# Fichiers IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Fichiers de test locaux (si vous en créez)
+test-data/
+*.test.md
+
+# Ne pas ignorer la configuration Claude
+!.claude/
+!.claude/agents/
+!.claude/agents/*.md
