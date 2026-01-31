@@ -1,4 +1,6 @@
-# 🤖 Configuration Claude Code - Agents Personnalisés
+# 🤖 Configuration Claude Code - Agents Power BI
+
+Configuration complète pour Claude Code d'agents Power BI. La configuration mise en place est bien sûr réutilisable avec d'autres LLMs.
 
 Ce dossier contient la configuration de vos agents Claude Code personnalisés pour l'organisation.
 
@@ -7,9 +9,13 @@ Ce dossier contient la configuration de vos agents Claude Code personnalisés po
 ```
 _ClaudeConfig/
 ├── .claude/
-│   └── agents/
-│       └── powerbi-documentation.md    # Agent de documentation Power BI
-└── README.md                            # Ce fichier
+│   ├── agents/
+│   │   ├── powerbi-audit.md           # Agent d'audit Power BI
+│   │   ├── powerbi-documentation.md   # Agent de documentation Power BI
+│   │   └── code-reviewer.md           # Agent de révision de code
+│   └── shared/
+│       └── powerbi-security.md        # Règles de sécurité partagées
+└── README.md                           # Ce fichier
 ```
 
 ## 🎯 Agents disponibles
@@ -164,7 +170,7 @@ Claude : [Peut déléguer à powerbi-documentation]
 
 ## 🔒 Sécurité
 
-L'agent `powerbi-documentation` est configuré avec des restrictions strictes :
+Les agents Power BI utilisent un système de sécurité centralisé via le fichier [.claude/shared/powerbi-security.md](.claude/shared/powerbi-security.md).
 
 ### ❌ Fichiers INTERDITS
 - `**/.pbi/**` - Cache Power BI
@@ -183,6 +189,16 @@ L'agent `powerbi-documentation` est configuré avec des restrictions strictes :
 ### Commandes Bash autorisées
 - ✅ `git`, `npm`, `ls`, `pwd`, `cd`
 - ❌ `rm -rf`, `curl`, `wget`
+
+### Architecture de sécurité
+
+Les règles de sécurité sont centralisées dans `.claude/shared/powerbi-security.md` pour éviter la duplication. Chaque agent Power BI référence ce fichier au démarrage.
+
+**Avantages** :
+- ✅ Une seule source de vérité pour les règles de sécurité
+- ✅ Pas de pollution des autres agents
+- ✅ Facilement maintenable
+- ✅ Parfait pour le partage via Git
 
 ## 🛠️ Créer vos propres agents
 
