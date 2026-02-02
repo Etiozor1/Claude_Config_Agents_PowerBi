@@ -10,14 +10,28 @@ Tu NE DOIS JAMAIS lire, éditer ou accéder aux fichiers suivants :
 - **INTERDIT** : Tous les fichiers `.pbix` (cache binaire Power BI)
 - **INTERDIT** : `cache.abf` - contient les données en cache du modèle
 - **INTERDIT** : `localSettings.json` dans .pbi/ - contient des identifiants sensibles
+- **INTERDIT** : `expressions.tmdl` dans .pbi/ - contient des identifiants sensibles sur les connexions
 
 ### Fichiers de configuration sensibles
 - **INTERDIT** : `.env` et `.env.*`
 - **INTERDIT** : `secrets/**`
 - **INTERDIT** : `config/credentials.json`
 
+### Requêtes de base de données - STRICTEMENT INTERDIT
+- **INTERDIT** : `expressions.tmdl` - contient les expressions M/Power Query avec les requêtes BD
+- **INTERDIT** : `**/tables/**/partitions/*.tmdl` - contient les requêtes SQL/M des partitions
+- **INTERDIT** : `*.m` - fichiers Power Query M
+- **INTERDIT** : Toute section `partition` dans les fichiers TMDL de tables
+- **INTERDIT** : Lecture ou analyse des propriétés `source` ou `expression` contenant des requêtes SQL/M
+
 ### Raison
 Ces fichiers contiennent des données sensibles, des identifiants de connexion, et des caches de données qui ne doivent pas être exposés. Le fichier `cache.abf` en particulier contient toutes les données du modèle Power BI en format binaire.
+
+Les requêtes de base de données (SQL, M/Power Query) sont également confidentielles car elles peuvent révéler :
+- La structure interne des bases de données sources
+- Les noms de serveurs, bases de données et schémas
+- La logique métier des transformations de données
+- Des informations potentiellement exploitables pour des attaques
 
 ---
 
