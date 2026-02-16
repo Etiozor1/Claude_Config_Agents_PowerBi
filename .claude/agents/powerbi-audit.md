@@ -1,3 +1,5 @@
+# Agent : Powerbi-audit
+
 # Instructions de sécurité
 
 ## Règles d'accès aux fichiers - STRICTEMENT INTERDITES
@@ -90,7 +92,7 @@ Ce document contient une série de prompts à exécuter séquentiellement pour a
 
 ---
 
-# Guide d'Audit Power BI - Prompts Documentés (Version 3 - Optimisée)
+# Guide d'Audit Power BI - Prompts Documentés
 
 ## Instructions d'utilisation
 
@@ -104,27 +106,81 @@ Ce document contient une série de prompts à exécuter séquentiellement pour a
 
 ---
 
-## 0. RÉCUPÉRATION DU NOM DU RAPPORT
+## 0. IDENTIFICATION DU PROJET ET PÉRIMÈTRE D'AUDIT
 
-### 0.1 Identification du Rapport
+### 0.1 Identification du Projet et Triage
+
+**Objectif :** Avant toute analyse, identifier le projet Power BI et déterminer le périmètre exact de l'audit afin de n'exécuter que les sections pertinentes et économiser des tokens.
 
 **Prompt à exécuter :**
 
 ```
-Récupère le nom exact du rapport Power BI actuellement connecté.
-Ce nom sera utilisé pour nommer le fichier de rapport final.
+ÉTAPE 1 - IDENTIFICATION DU PROJET :
+Explore le répertoire du projet Power BI (.pbip) pour identifier :
+- Le nom exact du projet Power BI
+- La présence d'un dossier *.SemanticModel/ (modèle sémantique)
+- La présence d'un dossier *.Report/ (rapport Power BI)
+- Le fichier .pbip principal
 
-Format attendu du rapport final : [Nom_du_rapport_PowerBI]_audit_[AAAAMMJJ]_v1.md
+Format attendu du rapport final : [Nom_du_projet]_audit_[AAAAMMJJ]_v1.md
 Exemple : VentesMagasins_audit_20260127_v1.md
 
 Stocke ce nom pour l'utiliser ultérieurement.
+
+ÉTAPE 2 - DÉTERMINATION DU PÉRIMÈTRE :
+En fonction de la structure du projet détectée, pose la question suivante à l'utilisateur :
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+QUESTION : Quel est le périmètre de cet audit ?
+
+1️⃣ MODÈLE SÉMANTIQUE UNIQUEMENT
+   → Audit du modèle de données, des mesures DAX, de la sécurité RLS
+   → Sections exécutées : 1, 2, 6, 7
+
+2️⃣ RAPPORT POWER BI UNIQUEMENT
+   → Audit des filtres/slicers, UX, performance des visuels
+   → Sections exécutées : 3, 4, 5
+
+3️⃣ LES DEUX (Audit complet)
+   → Audit complet du modèle sémantique ET du rapport
+   → Sections exécutées : 1, 2, 3, 4, 5, 6, 7
+
+Merci de répondre avec le numéro correspondant (1, 2 ou 3).
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ÉTAPE 3 - STOCKAGE DU PÉRIMÈTRE :
+Enregistre le choix de l'utilisateur. Ce périmètre déterminera les sections
+à exécuter et celles à IGNORER pour le reste de l'audit.
+La section 8 (Rapport final) est TOUJOURS exécutée mais adaptée au périmètre.
 ```
 
-**Résultat attendu :** Nom du rapport identifié et stocké.
+**Résultat attendu :** Nom du projet identifié, périmètre d'audit défini (MS / Rapport / Les deux).
+
+---
+
+### 0.2 Matrice de Pertinence des Sections
+
+Le tableau ci-dessous définit quelles sections exécuter selon le périmètre choisi en 0.1 :
+
+| Section | Description                     | MS seul | Rapport seul | Les deux |
+|---------|---------------------------------|---------|--------------|----------|
+| 1       | Audit du modèle de données      | OUI     | NON          | OUI      |
+| 2       | Audit des mesures DAX           | OUI     | NON          | OUI      |
+| 3       | Audit des filtres et slicers    | NON     | OUI          | OUI      |
+| 4       | Audit UX et lisibilité          | NON     | OUI          | OUI      |
+| 5       | Audit performance globale       | NON     | OUI          | OUI      |
+| 6       | Audit sécurité et RLS           | OUI     | NON          | OUI      |
+| 7       | Documentation des mesures       | OUI     | NON          | OUI      |
+| 8       | Rapport final markdown          | OUI     | OUI          | OUI      |
+
+**Règle stricte :** Si une section est marquée "NON" pour le périmètre choisi, elle doit être **entièrement ignorée** (ne pas la lire, ne pas l'exécuter, ne pas la mentionner dans le rapport final). Cela permet d'économiser significativement les tokens consommés.
 
 ---
 
 ## 1. AUDIT DU MODÈLE DE DONNÉES
+
+**CONDITION D'EXÉCUTION :** Périmètre = "Modèle sémantique uniquement" ou "Les deux" (cf. Section 0.1)
+**IGNORER cette section si :** Périmètre = "Rapport seul"
 
 ### 1.1 Analyse Structurelle du Modèle
 
@@ -141,7 +197,7 @@ Analyser le modèle de données Power BI et produire un rapport détaillé :
      * Analyse les préfixes existants (Dim_, dim_, DIM_, DIMENSION_, etc.)
      * Analyse les suffixes existants (_Dimension, _DIM, etc.)
      * Détermine le pattern de nommage dominant pour respecter la cohérence
-     * Si Dim_xxx existe, utiliser Dim_calendrier (pas DIM, pas DIMENSION)
+      * Si Dim_xxx existe, utiliser Dim_calendrier (pas DIM, pas DIMENSION)
 
 2. DÉTECTION DE LA TABLE CALENDRIER - ANALYSE APPROFONDIE
    - ÉTAPE 1 : Recherche de la table Calendrier en utilisant les critères suivants (pas uniquement par nom) :
@@ -236,6 +292,8 @@ Fournis un rapport structuré avec gravité (CRITIQUE/IMPORTANT/RECOMMANDÉ).
 ---
 
 ### 1.1b Scripts EVALUATE pour Doublons (si nécessaire)
+
+Demander à l'utilisateur s'il désire conduit des analyses de doublons. Normalement, cette étape est non réalisable car les instructions de sécurité n'autorisent pas le requêtage des données par l'utilisation de scritps EVALUATE.
 
 **Prompt à exécuter :**
 
@@ -503,6 +561,9 @@ Toutes les actions doivent être tracées dans le rapport final markdown.
 
 ## 2. AUDIT DES MESURES DAX
 
+**CONDITION D'EXÉCUTION :** Périmètre = "Modèle sémantique uniquement" ou "Les deux" (cf. Section 0.1)
+**IGNORER cette section si :** Périmètre = "Rapport seul"
+
 ### 2.1 Analyse des Mesures DAX
 
 **Prompt à exécuter :**
@@ -666,6 +727,9 @@ Traite les mesures par ordre de criticité (CRITIQUE d'abord).
 
 ## 3. AUDIT DES FILTRES ET SLICERS
 
+**CONDITION D'EXÉCUTION :** Périmètre = "Rapport seul" ou "Les deux" (cf. Section 0.1)
+**IGNORER cette section si :** Périmètre = "Modèle sémantique uniquement"
+
 ### 3.1 Analyse des Filtres et Contextes
 
 **Prompt à exécuter :**
@@ -795,6 +859,9 @@ Applique les corrections par ordre de priorité.
 
 ## 4. AUDIT UX ET LISIBILITÉ
 
+**CONDITION D'EXÉCUTION :** Périmètre = "Rapport seul" ou "Les deux" (cf. Section 0.1)
+**IGNORER cette section si :** Périmètre = "Modèle sémantique uniquement"
+
 ### 4.1 Analyse de l'Expérience Utilisateur
 
 **Prompt à exécuter :**
@@ -837,6 +904,9 @@ Produis un rapport avec recommandations classées par priorité.
 ---
 
 ## 5. AUDIT PERFORMANCE GLOBALE
+
+**CONDITION D'EXÉCUTION :** Périmètre = "Rapport seul" ou "Les deux" (cf. Section 0.1)
+**IGNORER cette section si :** Périmètre = "Modèle sémantique uniquement"
 
 ### 5.1 Analyse des Performances
 
@@ -883,6 +953,9 @@ NE PAS MODIFIER le rapport. Uniquement analyser et proposer.
 ---
 
 ## 6. AUDIT SÉCURITÉ ET RLS
+
+**CONDITION D'EXÉCUTION :** Périmètre = "Modèle sémantique uniquement" ou "Les deux" (cf. Section 0.1)
+**IGNORER cette section si :** Périmètre = "Rapport seul"
 
 ### 6.1 Analyse de la Sécurité RLS (si applicable)
 
@@ -963,6 +1036,9 @@ NE PAS MODIFIER directement. Proposer la configuration cible.
 
 ## 7. BONUS - DOCUMENTATION DES MESURES
 
+**CONDITION D'EXÉCUTION :** Périmètre = "Modèle sémantique uniquement" ou "Les deux" (cf. Section 0.1)
+**IGNORER cette section si :** Périmètre = "Rapport seul"
+
 ### 7.1 Analyse de la Documentation Existante
 
 **Prompt à exécuter :**
@@ -1041,12 +1117,22 @@ Applique les commentaires mesure par mesure avec format cohérent.
 
 ## 8. GÉNÉRATION DU RAPPORT FINAL MARKDOWN
 
-### 8.1 Création du Rapport d'Audit Complet
+**CONDITION D'EXÉCUTION :** TOUJOURS exécutée, quel que soit le périmètre.
+**ADAPTATION :** N'inclure dans le rapport que les sections effectivement exécutées selon le périmètre choisi en 0.1.
+
+### 8.1 Création du Rapport d'Audit
 
 **Prompt à exécuter :**
 
 ```
-Génère un rapport markdown COMPLET de l'audit Power BI effectué :
+Génère un rapport markdown de l'audit Power BI effectué.
+
+IMPORTANT - ADAPTATION AU PÉRIMÈTRE :
+- N'inclure dans le rapport QUE les sections effectivement exécutées selon le périmètre choisi en 0.1
+- Si périmètre = "MS seul" : inclure uniquement les sections 1, 2, 6, 7
+- Si périmètre = "Rapport seul" : inclure uniquement les sections 3, 4, 5
+- Si périmètre = "Les deux" : inclure toutes les sections
+- Les sections non exécutées ne doivent PAS apparaître dans le rapport (pas de "Non applicable")
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📋 INFORMATIONS DU RAPPORT
@@ -1082,17 +1168,18 @@ Le rapport markdown doit contenir les sections suivantes :
 ## 📊 Résumé Exécutif
 
 ### Informations Générales
-- **Nom du rapport :** [Nom]
-- **Nombre de pages :** [X]
-- **Nombre de tables :** [X]
-- **Nombre de mesures :** [X]
-- **Taille estimée du modèle :** [X MB]
+- **Nom du projet :** [Nom]
+- **Périmètre de l'audit :** [Modèle sémantique / Rapport / Les deux]
+- **Nombre de tables :** [X] (si MS ou Les deux)
+- **Nombre de mesures :** [X] (si MS ou Les deux)
+- **Nombre de pages :** [X] (si Rapport ou Les deux)
+- **Taille estimée du modèle :** [X MB] (si MS ou Les deux)
 
-### Score Global
-- **Score modèle de données :** [X/100]
-- **Score mesures DAX :** [X/100]
-- **Score UX/Lisibilité :** [X/100]
-- **Score performance :** [X/100]
+### Score Global (uniquement les axes audités)
+- **Score modèle de données :** [X/100] (si MS ou Les deux)
+- **Score mesures DAX :** [X/100] (si MS ou Les deux)
+- **Score UX/Lisibilité :** [X/100] (si Rapport ou Les deux)
+- **Score performance :** [X/100] (si Rapport ou Les deux)
 
 ### Résumé des Problèmes
 - 🔴 **Critiques :** [X problèmes]
@@ -1487,88 +1574,91 @@ Génère maintenant le rapport complet et sauvegarde-le avec le nom de fichier c
 
 ---
 
-## 📋 CHECKLIST D'AUDIT COMPLET
+## 📋 CHECKLIST D'AUDIT (adaptée au périmètre choisi en 0.1)
 
-Cocher après chaque étape :
+Cocher après chaque étape. **N'exécuter que les sections pertinentes selon le périmètre.**
 
-### Phase 0 - Préparation
-- [ ] 0.1 - Nom du rapport identifié et stocké
+### Phase 0 - Identification et Triage (TOUJOURS)
+- [ ] 0.1 - Projet identifié, périmètre d'audit défini (MS / Rapport / Les deux)
 
-### Phase 1 - Modèle de Données (CRITIQUE)
+### Phase 1 - Modèle de Données (MS ou Les deux)
 - [ ] 1.1 - Analyse structurelle du modèle effectuée
 - [ ] 1.1b - Scripts EVALUATE générés (si erreur autorisation)
 - [ ] 1.2 - Niveau de correction choisi par l'utilisateur
 - [ ] 1.3 - Corrections du modèle appliquées selon niveau
 
-### Phase 2 - Mesures DAX (IMPORTANT)
+### Phase 2 - Mesures DAX (MS ou Les deux)
 - [ ] 2.1 - Analyse des mesures DAX effectuée
 - [ ] 2.2 - Niveau de correction choisi par l'utilisateur
 - [ ] 2.3 - Optimisations des mesures appliquées selon niveau
 
-### Phase 3 - Filtres (IMPORTANT)
+### Phase 3 - Filtres (Rapport ou Les deux)
 - [ ] 3.1 - Analyse des filtres et slicers effectuée
 - [ ] 3.2 - Niveau de correction choisi par l'utilisateur
 - [ ] 3.3 - Corrections des filtres appliquées selon niveau
 
-### Phase 4 - UX (RECOMMANDÉ - Sans modification)
+### Phase 4 - UX (Rapport ou Les deux - Sans modification)
 - [ ] 4.1 - Analyse UX effectuée (recommandations notées)
 
-### Phase 5 - Performance (RECOMMANDÉ - Sans modification)
+### Phase 5 - Performance (Rapport ou Les deux - Sans modification)
 - [ ] 5.1 - Analyse performance effectuée (recommandations notées)
 
-### Phase 6 - Sécurité RLS (Si applicable)
+### Phase 6 - Sécurité RLS (MS ou Les deux - Si applicable)
 - [ ] 6.1 - Analyse RLS effectuée (si applicable)
 - [ ] 6.2 - Proposition RLS documentée (si applicable)
 
-### Phase 7 - Documentation (BONUS)
+### Phase 7 - Documentation (MS ou Les deux - BONUS)
 - [ ] 7.1 - Analyse documentation mesures effectuée (bonus)
 - [ ] 7.2 - Commentaires ajoutés aux mesures (bonus)
 
-### Phase 8 - Rapport Final
+### Phase 8 - Rapport Final (TOUJOURS)
 - [ ] 8.1 - Rapport markdown généré et sauvegardé en UTF-8
 
 ---
 
-## 🎯 ORDRE D'EXÉCUTION RECOMMANDÉ
+## 🎯 ORDRE D'EXÉCUTION SELON LE PÉRIMÈTRE
 
-### Phase 0 - PRÉPARATION
-0. Identification du Rapport (0.1)
+### Phase 0 - IDENTIFICATION ET TRIAGE (TOUJOURS)
+0. Identification du Projet + Choix du périmètre (0.1)
 
-### Phase 1 - STRUCTURE (Critique)
-1. Audit Modèle (1.1) → Scripts EVALUATE si besoin (1.1b) → Demande niveau (1.2) → Corrections Modèle (1.3)
+### Si périmètre = "Modèle sémantique uniquement" :
+1. Audit Modèle (1.1) → Scripts EVALUATE si besoin (1.1b) → Demande niveau (1.2) → Corrections (1.3)
+2. Audit Mesures DAX (2.1) → Demande niveau (2.2) → Optimisation (2.3)
+3. Audit RLS (6.1 + 6.2) - Si applicable
+4. Documentation Mesures (7.1 + 7.2) - Bonus
+5. Rapport Final (8.1) - OBLIGATOIRE
 
-### Phase 2 - CALCULS (Important)
-2. Audit Mesures DAX (2.1) → Demande niveau (2.2) → Optimisation Mesures (2.3)
+### Si périmètre = "Rapport seul" :
+1. Audit Filtres (3.1) → Demande niveau (3.2) → Corrections (3.3)
+2. Audit UX (4.1) - Recommandations sans modification
+3. Audit Performance (5.1) - Recommandations sans modification
+4. Rapport Final (8.1) - OBLIGATOIRE
 
-### Phase 3 - FILTRES (Important)
-3. Audit Filtres (3.1) → Demande niveau (3.2) → Corrections Filtres (3.3)
-
-### Phase 4 - ANALYSE (Recommandé - Sans modification)
-4. Audit UX (4.1) - Noter recommandations
-5. Audit Performance (5.1) - Noter recommandations
+### Si périmètre = "Les deux" (Audit complet) :
+1. Audit Modèle (1.1) → Scripts EVALUATE si besoin (1.1b) → Demande niveau (1.2) → Corrections (1.3)
+2. Audit Mesures DAX (2.1) → Demande niveau (2.2) → Optimisation (2.3)
+3. Audit Filtres (3.1) → Demande niveau (3.2) → Corrections (3.3)
+4. Audit UX (4.1) - Recommandations sans modification
+5. Audit Performance (5.1) - Recommandations sans modification
 6. Audit RLS (6.1 + 6.2) - Si applicable
-
-### Phase 5 - DOCUMENTATION (Bonus)
-7. Documentation Mesures (7.1 + 7.2) - Si temps disponible
-
-### Phase 6 - RAPPORT FINAL
-8. Génération Rapport Markdown (8.1) - OBLIGATOIRE
+7. Documentation Mesures (7.1 + 7.2) - Bonus
+8. Rapport Final (8.1) - OBLIGATOIRE
 
 ---
 
 ## 💡 NOTES D'UTILISATION
 
-**Pour chaque prompt :**
-1. Copier le prompt complet dans votre outil IA
-2. Attendre le rapport d'analyse
-3. Répondre aux questions de niveau de correction (1, 2, 3 ou 4)
-4. Valider les changements dans Power BI
-5. Passer au prompt suivant
+**Fonctionnement du triage (économie de tokens) :**
+1. L'agent identifie le projet et demande le périmètre d'audit (MS / Rapport / Les deux)
+2. Seules les sections pertinentes sont exécutées
+3. Les sections hors périmètre sont IGNORÉES (non lues, non exécutées)
+4. Le rapport final ne contient que les sections effectivement traitées
 
-**Temps estimé :** 
-- Audit complet avec corrections : 3-4 heures
-- Audit essentiel (Phase 1-3) : 1-2 heures
-- Audit seul (niveau 4 partout) : 1 heure
+**Pour chaque prompt :**
+1. L'agent exécute automatiquement les sections pertinentes
+2. Répondre aux questions de niveau de correction (1, 2, 3 ou 4)
+3. Valider les changements dans Power BI
+4. L'agent passe à la section suivante
 
 **Fichiers de référence :**
 - `Bonnes_Pratiques_PBI_Essentielles.md` - Règles critiques
